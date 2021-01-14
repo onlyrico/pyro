@@ -215,17 +215,13 @@ class Multinomial(torch.distributions.Multinomial, TorchDistributionMixin):
             batch_shape = broadcast_shape(batch_shape, total_count)
         return batch_shape, event_shape
 
-    @constraints.dependent_property
+    @constraints.dependent_property(event_dim=1, is_discrete=True)
     def support(self):
         total_count = self.total_count
         if hasattr(total_count, "unsqueeze"):
             total_count = total_count.unsqueeze(-1)
         return constraints.independent(
             constraints.integer_interval(0, total_count), 1)
-
-
-Multinomial.support.event_dim = 1
-Multinomial.support.is_discrete = True
 
 
 class Normal(torch.distributions.Normal, TorchDistributionMixin):

@@ -7,12 +7,15 @@ from torch.distributions.constraints import Constraint
 from torch.distributions.constraints import __all__ as torch_constraints
 from torch.distributions.constraints import lower_cholesky
 
+import pyro.distributions.torch_patch  # noqa F403
+
 
 # Patch .event_dim into upstream constraints.
 # TODO move this upstream to torch.distributions
 def _():
     static_dims = {
         "Constraint": 0,
+        "_Simplex": 1,
         "_Simplex": 1,
         "_OneHot": 1,
         "_LowerTriangular": 2,

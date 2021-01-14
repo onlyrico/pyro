@@ -180,6 +180,7 @@ def test_discrete_hmm_homogeneous_trick(init_shape, trans_shape, obs_shape, even
 
     d = dist.DiscreteHMM(init_logits, trans_logits, obs_dist)
     assert d.event_shape == (1,) + event_shape
+    assert d.support.event_dim == d.event_dim
 
     data = obs_dist.expand(batch_shape + (num_steps, state_dim)).sample()
     data = data[(slice(None),) * (len(batch_shape) + 1) + (0,)]
@@ -295,6 +296,7 @@ def test_gaussian_hmm_shape(diag, init_shape, trans_mat_shape, trans_mvn_shape,
     expected_event_shape = time_shape + (obs_dim,)
     assert d.batch_shape == expected_batch_shape
     assert d.event_shape == expected_event_shape
+    assert d.support.event_dim == d.event_dim
 
     data = obs_dist.expand(shape).sample()
     assert data.shape == d.shape()
@@ -478,6 +480,7 @@ def test_gaussian_mrf_shape(init_shape, trans_shape, obs_shape, hidden_dim, obs_
     expected_event_shape = time_shape + (obs_dim,)
     assert d.batch_shape == expected_batch_shape
     assert d.event_shape == expected_event_shape
+    assert d.support.event_dim == d.event_dim
 
     data = obs_dist.expand(shape).sample()[..., hidden_dim:]
     assert data.shape == d.shape()
@@ -602,6 +605,7 @@ def test_gamma_gaussian_hmm_shape(scale_shape, init_shape, trans_mat_shape, tran
     expected_event_shape = time_shape + (obs_dim,)
     assert d.batch_shape == expected_batch_shape
     assert d.event_shape == expected_event_shape
+    assert d.support.event_dim == d.event_dim
 
     data = obs_dist.expand(shape).sample()
     assert data.shape == d.shape()
@@ -719,6 +723,7 @@ def test_stable_hmm_shape(init_shape, trans_mat_shape, trans_dist_shape,
     expected_event_shape = time_shape + (obs_dim,)
     assert d.batch_shape == expected_batch_shape
     assert d.event_shape == expected_event_shape
+    assert d.support.event_dim == d.event_dim
 
     x = d.rsample()
     assert x.shape == d.shape()
@@ -771,6 +776,7 @@ def test_studentt_hmm_shape(init_shape, trans_mat_shape, trans_dist_shape,
     expected_event_shape = time_shape + (obs_dim,)
     assert d.batch_shape == expected_batch_shape
     assert d.event_shape == expected_event_shape
+    assert d.support.event_dim == d.event_dim
 
     x = d.rsample()
     assert x.shape == d.shape()
@@ -824,6 +830,7 @@ def test_independent_hmm_shape(init_shape, trans_mat_shape, trans_mvn_shape,
     expected_event_shape = time_shape + (obs_dim,)
     assert d.batch_shape == expected_batch_shape
     assert d.event_shape == expected_event_shape
+    assert d.support.event_dim == d.event_dim
 
     data = torch.randn(shape + (obs_dim,))
     assert data.shape == d.shape()

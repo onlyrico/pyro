@@ -34,6 +34,40 @@ def patch_dependency(target, root_module=torch):
     return decorator
 
 
+# backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._Dependent.__init__")
+def _Dependent__init__(self, *, is_discrete=False, event_dim=0):
+    self.is_discrete = is_discrete
+    self.event_dim = event_dim
+    super(torch.distributions.constraints._Dependent, self).__init__()
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._Dependent.__call__")
+def _Dependent__call__(self, *, is_discrete=None, event_dim=None):
+    if is_discrete is None:
+        is_discrete = self.is_discrete
+    if event_dim is None:
+        event_dim = self.event_dim
+    return torch.distributions.constraints._Dependent(
+        is_discrete=is_discrete, event_dim=event_dim)
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._DependentProperty.__init__")
+def _DependentProperty__init__(self, fn=None, *, is_discrete=False, event_dim=0):
+    self.is_discrete = is_discrete
+    self.event_dim = event_dim
+    super(torch.distributions.constraints._DependentProperty, self).__init__(fn)
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._DependentProperty.__call__")
+def _DependentProperty__call__(self, fn):
+    return torch.distributions.constraints._DependentProperty(
+        fn, is_discrete=self.is_discrete, event_dim=self.event_dim)
+
+
 # TODO: Move upstream to allow for pickle serialization of transforms
 @patch_dependency('torch.distributions.transforms.Transform.__getstate__')
 def _Transform__getstate__(self):
@@ -73,6 +107,8 @@ def _Multinomial_support(self):
 # TODO fix https://github.com/pytorch/pytorch/issues/48054 upstream
 @patch_dependency('torch.distributions.HalfCauchy.log_prob')
 def _HalfCauchy_logprob(self, value):
+    if self._validate_args:
+        self._validate_sample(value)
     value = torch.as_tensor(value, dtype=self.base_dist.scale.dtype,
                             device=self.base_dist.scale.device)
     log_prob = self.base_dist.log_prob(value) + math.log(2)
