@@ -309,7 +309,7 @@ class DiscreteHMM(HiddenMarkovModel):
         self.observation_dist = observation_dist
         super().__init__(duration, batch_shape, event_shape, validate_args=validate_args)
 
-    @property
+    @constraints.dependent_property
     def support(self):
         return self.observation_dist.support
 
@@ -953,7 +953,7 @@ class LinearHMM(HiddenMarkovModel):
         self.observation_dist = observation_dist
         self.transforms = transforms
 
-    @property
+    @constraints.dependent_property
     def support(self):
         return self.observation_dist.support
 

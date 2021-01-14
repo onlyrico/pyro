@@ -141,6 +141,7 @@ def test_discrete_hmm_shape(ok, init_shape, trans_shape, obs_shape, event_shape,
         return
 
     d = dist.DiscreteHMM(init_logits, trans_logits, obs_dist)
+    assert d.support.event_dim == d.event_dim
 
     actual = d.log_prob(data)
     expected_shape = broadcast_shape(init_shape, trans_shape[:-1], obs_shape[:-1])

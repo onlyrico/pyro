@@ -8,9 +8,37 @@ from torch.distributions.constraints import __all__ as torch_constraints
 from torch.distributions.constraints import lower_cholesky
 
 
+# Patch .event_dim into upstream constraints.
+# TODO move this upstream to torch.distributions
+def _():
+    static_dims = {
+        "Constraint": 0,
+        "_Simplex": 1,
+        "_OneHot": 1,
+        "_LowerTriangular": 2,
+        "_LowerCholesky": 2,
+        "_CorrCholesky": 2,
+        "_PositiveDefinite": 2,
+        "_RealVector": 1,
+    }
+    module = torch.distributions.constraints
+    for name, event_dim in static_dims.items():
+        try:
+            cls = getattr(module, name)
+        except AttributeError:
+            pass  # Ignore PyTorch version mismatch.
+        else:
+            cls.event_dim = event_dim
+
+
+_()
+
+
 # TODO move this upstream to torch.distributions
 class IndependentConstraint(Constraint):
     """
+    DEPRECATED use the public ``constraints.independent`` instead.
+
     Wraps a constraint by aggregating over ``reinterpreted_batch_ndims``-many
     dims in :meth:`check`, so that an event is valid only if all its
     independent entries are valid.
@@ -24,10 +52,18 @@ class IndependentConstraint(Constraint):
         self.base_constraint = base_constraint
         self.reinterpreted_batch_ndims = reinterpreted_batch_ndims
 
+    @property
+    def is_discrete(self):
+        return self.base_constraint.is_discrete
+
+    @property
+    def event_dim(self):
+        return self.base_constraint.event_dim + self.reinterpreted_batch_ndims
+
     def check(self, value):
         result = self.base_constraint.check(value)
         result = result.reshape(result.shape[:result.dim() - self.reinterpreted_batch_ndims] + (-1,))
-        result = result.min(-1)[0]
+        result = result.all(-1)
         return result
 
 
@@ -36,6 +72,8 @@ class _Integer(Constraint):
     """
     Constrain to integers.
     """
+    is_discrete = True
+
     def check(self, value):
         return value % 1 == 0
 
@@ -47,6 +85,7 @@ class _Sphere(Constraint):
     """
     Constrain to the Euclidean sphere of any dimension.
     """
+    event_dim = 1
     reltol = 10.  # Relative to finfo.eps.
 
     def check(self, value):
@@ -68,6 +107,7 @@ class _CorrCholesky(Constraint):
     Euclidean norm of each row is 1, such that `torch.mm(omega, omega.t())` will
     have unit diagonal.
     """
+    event_dim = 2
 
     def check(self, value):
         unit_norm_row = (value.norm(dim=-1).sub(1) < 1e-4).min(-1)[0]
@@ -79,6 +119,7 @@ class _OrderedVector(Constraint):
     Constrains to a real-valued tensor where the elements are monotonically
     increasing along the `event_shape` dimension.
     """
+    event_dim = 1
 
     def check(self, value):
         if value.ndim == 0:
@@ -90,6 +131,7 @@ class _OrderedVector(Constraint):
 
 
 corr_cholesky_constraint = _CorrCholesky()
+independent = IndependentConstraint
 integer = _Integer()
 ordered_vector = _OrderedVector()
 sphere = _Sphere()
@@ -97,6 +139,7 @@ sphere = _Sphere()
 __all__ = [
     'IndependentConstraint',
     'corr_cholesky_constraint',
+    'independent',
     'integer',
     'ordered_vector',
     'sphere',

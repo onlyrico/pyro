@@ -5,10 +5,7 @@ from torch.distributions import biject_to, transform_to
 from torch.distributions.transforms import *  # noqa F403
 from torch.distributions.transforms import __all__ as torch_transforms
 
-from pyro.distributions.constraints import (
-                                            IndependentConstraint,
-                                            corr_cholesky_constraint,
-                                            ordered_vector)
+from pyro.distributions.constraints import corr_cholesky_constraint, independent, ordered_vector
 from pyro.distributions.torch_transform import ComposeTransformModule
 from pyro.distributions.transforms.affine_autoregressive import (AffineAutoregressive, ConditionalAffineAutoregressive,
                                                                  affine_autoregressive,
@@ -48,8 +45,8 @@ from pyro.distributions.transforms.sylvester import Sylvester, sylvester
 ########################################
 # register transforms
 
-biject_to.register(IndependentConstraint, lambda c: biject_to(c.base_constraint))
-transform_to.register(IndependentConstraint, lambda c: transform_to(c.base_constraint))
+biject_to.register(independent, lambda c: biject_to(c.base_constraint))
+transform_to.register(independent, lambda c: transform_to(c.base_constraint))
 
 
 @biject_to.register(corr_cholesky_constraint)

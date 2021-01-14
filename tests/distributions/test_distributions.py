@@ -20,7 +20,31 @@ def _log_prob_shape(dist, x_size=torch.Size()):
         expected_shape = expected_shape[:-event_dims]
     return expected_shape
 
+
 # Distribution tests - all distributions
+
+def test_support_shape(dist):
+    for idx in range(dist.get_num_test_data()):
+        dist_params = dist.get_dist_params(idx)
+        d = dist.pyro_dist(**dist_params)
+        assert d.support.event_dim == d.event_dim
+        x = dist.get_test_data(idx)
+        ok = d.support.check(x)
+        assert ok.shape == broadcast_shape(d.batch_shape, x.shape[:x.dim() - d.event_dim])
+        assert ok.all()
+
+
+def test_infer_shapes(dist):
+    if dist.pyro_dist.__name__ == "LKJCorrCholesky":
+        pytest.xfail(reason="cannot statically compute shape")
+    for idx in range(dist.get_num_test_data()):
+        dist_params = dist.get_dist_params(idx)
+        arg_shapes = {k: v.shape if isinstance(v, torch.Tensor) else ()
+                      for k, v in dist_params.items()}
+        batch_shape, event_shape = dist.pyro_dist.infer_shapes(**arg_shapes)
+        d = dist.pyro_dist(**dist_params)
+        assert d.batch_shape == batch_shape
+        assert d.event_shape == event_shape
 
 
 def test_batch_log_prob(dist):
