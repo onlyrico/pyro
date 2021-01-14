@@ -5,13 +5,14 @@ import warnings
 from collections import OrderedDict
 
 import torch
-from torch.distributions import constraints
 from torch.distributions.kl import kl_divergence, register_kl
 
 import pyro.distributions.torch
-from pyro.distributions.distribution import Distribution
-from pyro.distributions.score_parts import ScoreParts
-from pyro.distributions.util import broadcast_shape, scale_and_mask
+
+from . import constraints
+from .distribution import Distribution
+from .score_parts import ScoreParts
+from .util import broadcast_shape, scale_and_mask
 
 
 class TorchDistributionMixin(Distribution):
@@ -90,7 +91,7 @@ class TorchDistributionMixin(Distribution):
         # Assumes distribution is univariate.
         batch_shapes = []
         for name, shape in arg_shapes.items():
-            event_dim = cls.arg_constraints[name].event_dim
+            event_dim = cls.arg_constraints.get(name, constraints.real).event_dim
             batch_shapes.append(shape[:len(shape) - event_dim])
         batch_shape = torch.Size(broadcast_shape(*batch_shapes))
         event_shape = torch.Size()

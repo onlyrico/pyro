@@ -217,8 +217,11 @@ class Multinomial(torch.distributions.Multinomial, TorchDistributionMixin):
 
     @constraints.dependent_property
     def support(self):
+        total_count = self.total_count
+        if hasattr(total_count, "unsqueeze"):
+            total_count = total_count.unsqueeze(-1)
         return constraints.independent(
-            constraints.integer_interval(0, self.total_count), 1)
+            constraints.integer_interval(0, total_count), 1)
 
 
 Multinomial.support.event_dim = 1
