@@ -1,10 +1,11 @@
 # Copyright Contributors to the Pyro project.
 # SPDX-License-Identifier: Apache-2.0
 
-from torch.distributions import constraints
 from torch.distributions.transforms import Transform
 
 from pyro.ops.tensor_utils import haar_transform, inverse_haar_transform
+
+from .. import constraints
 
 
 class HaarTransform(Transform):
@@ -23,8 +24,6 @@ class HaarTransform(Transform):
     :param bool flip: Whether to flip the time axis before applying the
         Haar transform. Defaults to false.
     """
-    domain = constraints.real_vector
-    codomain = constraints.real_vector
     bijective = True
 
     def __init__(self, dim=-1, flip=False, cache_size=0):
@@ -33,9 +32,20 @@ class HaarTransform(Transform):
         self.flip = flip
         super().__init__(cache_size=cache_size)
 
+    def __hash__(self):
+        return hash((type(self), self.event_dim, self.flip))
+
     def __eq__(self, other):
         return (type(self) == type(other) and self.event_dim == other.event_dim and
                 self.flip == other.flip)
+
+    @constraints.dependent_property(is_discrete=False)
+    def domain(self):
+        return constraints.independent(constraints.real, self.event_dim)
+
+    @constraints.dependent_property(is_discrete=False)
+    def codomain(self):
+        return constraints.independent(constraints.real, self.event_dim)
 
     def _call(self, x):
         dim = -self.event_dim
@@ -66,3 +76,13 @@ class HaarTransform(Transform):
         if self._cache_size == cache_size:
             return self
         return HaarTransform(-self.event_dim, flip=self.flip, cache_size=cache_size)
+
+    def forward_shape(self, shape):
+        if len(shape) < self.event_dim:
+            raise ValueError("Too few dimensions on input")
+        return shape
+
+    def inverse_shape(self, shape):
+        if len(shape) < self.event_dim:
+            raise ValueError("Too few dimensions on input")
+        return shape

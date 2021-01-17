@@ -80,6 +80,30 @@ def _Transform__getstate__(self):
     return attrs
 
 
+# backport of https://github.com/pytorch/pytorch/pull/50581
+@patch_dependency('torch.distributions.transforms.Transform.forward_shape')
+def _Transform_forward_shape(self, shape):
+    return shape
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50581
+@patch_dependency('torch.distributions.transforms.Transform.inverse_shape')
+def _Transform_inverse_shape(self, shape):
+    return shape
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50581
+@patch_dependency('torch.distributions.transforms._InverseTransform.forward_shape')
+def _InverseTransform_forward_shape(self, shape):
+    return self.inv.inverse_shape(shape)
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50581
+@patch_dependency('torch.distributions.transforms._InverseTransform.forward_shape')
+def _InverseTransform_inverse_shape(self, shape):
+    return self.inv.forward_shape(shape)
+
+
 # TODO move upstream
 @patch_dependency('torch.distributions.transforms.Transform.clear_cache')
 def _Transform_clear_cache(self):

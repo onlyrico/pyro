@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from torch.distributions import constraints
 from torch.distributions.transforms import Transform
 
 from pyro.ops.tensor_utils import dct, idct
+
+from .. import constraints
 
 
 class DiscreteCosineTransform(Transform):
@@ -23,8 +24,6 @@ class DiscreteCosineTransform(Transform):
         noise; when -1 this transforms violet noise to white noise; etc. Any
         real number is allowed. https://en.wikipedia.org/wiki/Colors_of_noise.
     """
-    domain = constraints.real_vector
-    codomain = constraints.real_vector
     bijective = True
 
     def __init__(self, dim=-1, smooth=0., cache_size=0):
@@ -34,9 +33,20 @@ class DiscreteCosineTransform(Transform):
         self._weight_cache = None
         super().__init__(cache_size=cache_size)
 
+    def __hash__(self):
+        return hash((type(self), self.event_dim, self.flip))
+
     def __eq__(self, other):
         return (type(self) == type(other) and self.event_dim == other.event_dim
                 and self.smooth == other.smooth)
+
+    @constraints.dependent_property(is_discrete=False)
+    def domain(self):
+        return constraints.independent(constraints.real, self.event_dim)
+
+    @constraints.dependent_property(is_discrete=False)
+    def codomain(self):
+        return constraints.independent(constraints.real, self.event_dim)
 
     @torch.no_grad()
     def _weight(self, y):
