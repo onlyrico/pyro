@@ -10,8 +10,7 @@ from torch.distributions.constraints import lower_cholesky
 import pyro.distributions.torch_patch  # noqa F403
 
 
-# Patch .event_dim into upstream constraints.
-# TODO move this upstream to torch.distributions
+# backport of https://github.com/pytorch/pytorch/pull/50547
 def _():
     static_dims = {
         "Constraint": 0,
