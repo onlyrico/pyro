@@ -55,7 +55,7 @@ def _Dependent__call__(self, *, is_discrete=None, event_dim=None):
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
 @patch_dependency("torch.distributions.constraints._DependentProperty.__init__")
-def _DependentProperty__init__(self, fn=None, *, is_discrete=False, event_dim=0):
+def _DependentProperty__init__(self, fn=None, *, is_discrete=None, event_dim=None):
     self.is_discrete = is_discrete
     self.event_dim = event_dim
     super(torch.distributions.constraints._DependentProperty, self).__init__(fn)
@@ -66,18 +66,6 @@ def _DependentProperty__init__(self, fn=None, *, is_discrete=False, event_dim=0)
 def _DependentProperty__call__(self, fn):
     return torch.distributions.constraints._DependentProperty(
         fn, is_discrete=self.is_discrete, event_dim=self.event_dim)
-
-
-# TODO: Move upstream to allow for pickle serialization of transforms
-@patch_dependency('torch.distributions.transforms.Transform.__getstate__')
-def _Transform__getstate__(self):
-    attrs = {}
-    for k, v in self.__dict__.items():
-        if isinstance(v, weakref.ref):
-            attrs[k] = None
-        else:
-            attrs[k] = v
-    return attrs
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50581
@@ -102,6 +90,18 @@ def _InverseTransform_forward_shape(self, shape):
 @patch_dependency('torch.distributions.transforms._InverseTransform.forward_shape')
 def _InverseTransform_inverse_shape(self, shape):
     return self.inv.forward_shape(shape)
+
+
+# TODO: Move upstream to allow for pickle serialization of transforms
+@patch_dependency('torch.distributions.transforms.Transform.__getstate__')
+def _Transform__getstate__(self):
+    attrs = {}
+    for k, v in self.__dict__.items():
+        if isinstance(v, weakref.ref):
+            attrs[k] = None
+        else:
+            attrs[k] = v
+    return attrs
 
 
 # TODO move upstream

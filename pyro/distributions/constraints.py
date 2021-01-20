@@ -15,33 +15,29 @@ import pyro.distributions.torch_patch  # noqa F403
 def _():
     static_dims = {
         "Constraint": 0,
-        "_Simplex": 1,
-        "_Simplex": 1,
-        "_OneHot": 1,
-        "_LowerTriangular": 2,
-        "_LowerCholesky": 2,
-        "_CorrCholesky": 2,
-        "_PositiveDefinite": 2,
-        "_RealVector": 1,
+        "Simplex": 1,
+        "Multinomial": 1,
+        "OneHot": 1,
+        "LowerTriangular": 2,
+        "LowerCholesky": 2,
+        "CorrCholesky": 2,
+        "PositiveDefinite": 2,
+        "RealVector": 1,
     }
     module = torch.distributions.constraints
     for name, event_dim in static_dims.items():
-        try:
-            cls = getattr(module, name)
-        except AttributeError:
-            pass  # Ignore PyTorch version mismatch.
-        else:
+        cls = getattr(module, "_" + name, None)  # Old private names.
+        cls = getattr(module, name, cls)  # New public names.
+        if cls is not None:  # Ignore PyTorch version mismatch.
             cls.event_dim = event_dim
 
 
 _()
 
 
-# TODO move this upstream to torch.distributions
+# TODO remove after https://github.com/pytorch/pytorch/pull/50547
 class IndependentConstraint(Constraint):
     """
-    DEPRECATED use the public ``constraints.independent`` instead.
-
     Wraps a constraint by aggregating over ``reinterpreted_batch_ndims``-many
     dims in :meth:`check`, so that an event is valid only if all its
     independent entries are valid.

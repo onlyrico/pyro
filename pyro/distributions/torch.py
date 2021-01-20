@@ -121,6 +121,8 @@ class Categorical(torch.distributions.Categorical, TorchDistributionMixin):
 
 
 class Dirichlet(torch.distributions.Dirichlet, TorchDistributionMixin):
+    arg_constraints = {"concentration": constraints.independent(constraints.positive, 1)}
+
     @staticmethod
     def infer_shapes(concentration):
         batch_shape = concentration[:-1]
@@ -275,7 +277,7 @@ class Uniform(torch.distributions.Uniform, TorchDistributionMixin):
         new._unbroadcasted_high = self._unbroadcasted_high
         return new
 
-    @constraints.dependent_property
+    @constraints.dependent_property(is_discrete=False, event_dim=0)
     def support(self):
         return constraints.interval(self._unbroadcasted_low, self._unbroadcasted_high)
 
