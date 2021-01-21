@@ -109,6 +109,13 @@ def test_score_errors_non_broadcastable_data_shape(dist):
 
 # Distributions tests - continuous distributions
 
+def test_support_is_not_discrete(continuous_dist):
+    Dist = continuous_dist.pyro_dist
+    for i in range(continuous_dist.get_num_test_data()):
+        d = Dist(**continuous_dist.get_dist_params(i))
+        assert not d.support.is_discrete
+
+
 def test_gof(continuous_dist):
     Dist = continuous_dist.pyro_dist
     if Dist is dist.LKJCorrCholesky:
@@ -137,6 +144,13 @@ def test_gof(continuous_dist):
 
 
 # Distributions tests - discrete distributions
+
+def test_support_is_discrete(discrete_dist):
+    Dist = discrete_dist.pyro_dist
+    for i in range(discrete_dist.get_num_test_data()):
+        d = Dist(**discrete_dist.get_dist_params(i))
+        assert d.support.is_discrete
+
 
 def test_enumerate_support(discrete_dist):
     expected_support = discrete_dist.expected_support

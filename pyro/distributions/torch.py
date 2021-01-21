@@ -227,6 +227,8 @@ class Normal(torch.distributions.Normal, TorchDistributionMixin):
 
 
 class OneHotCategorical(torch.distributions.OneHotCategorical, TorchDistributionMixin):
+    support = constraints.multinomial(1)
+
     @staticmethod
     def infer_shapes(probs=None, logits=None):
         tensor = probs if logits is None else logits
