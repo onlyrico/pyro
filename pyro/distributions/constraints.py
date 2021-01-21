@@ -12,7 +12,23 @@ import pyro.distributions.torch_patch  # noqa F403
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
 def _():
-    static_dims = {
+    module = torch.distributions.constraints
+
+    static_is_discrete = {
+        "Boolean": True,
+        "Constraint": False,
+        "IntegerGreaterThan": True,
+        "IntegerInterval": True,
+        "Multinomial": True,
+        "OneHot": True,
+    }
+    for name, is_discrete in static_is_discrete.items():
+        cls = getattr(module, "_" + name, None)  # Old private names.
+        cls = getattr(module, name, cls)  # New public names.
+        if cls is not None:  # Ignore PyTorch version mismatch.
+            cls.is_discrete = is_discrete
+
+    static_event_dim = {
         "Constraint": 0,
         "Simplex": 1,
         "Multinomial": 1,
@@ -23,8 +39,7 @@ def _():
         "PositiveDefinite": 2,
         "RealVector": 1,
     }
-    module = torch.distributions.constraints
-    for name, event_dim in static_dims.items():
+    for name, event_dim in static_event_dim.items():
         cls = getattr(module, "_" + name, None)  # Old private names.
         cls = getattr(module, name, cls)  # New public names.
         if cls is not None:  # Ignore PyTorch version mismatch.
