@@ -41,7 +41,7 @@ class _property(property):
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
 @patch_dependency("torch.distributions.constraints._Dependent.__init__")
-def _Dependent__init__(self, *, is_discrete=False, event_dim=0):
+def _Dependent__init__(self, *, is_discrete=NotImplemented, event_dim=NotImplemented):
     self._is_discrete = is_discrete
     self._event_dim = event_dim
     super(torch.distributions.constraints._Dependent, self).__init__()

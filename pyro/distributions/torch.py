@@ -48,6 +48,10 @@ class Binomial(torch.distributions.Binomial, TorchDistributionMixin):
     # plus arithmetic. Recommended values are between 0.1 and 0.01.
     approx_log_prob_tol = 0.
 
+    @constraints.dependent_property(is_discrete=True, event_dim=0)
+    def support(self):
+        return constraints.integer_interval(0, self.total_count)
+
     def sample(self, sample_shape=torch.Size()):
         if self.approx_sample_thresh < math.inf:
             exact = self.total_count <= self.approx_sample_thresh
@@ -96,6 +100,10 @@ class Binomial(torch.distributions.Binomial, TorchDistributionMixin):
 class Categorical(torch.distributions.Categorical, TorchDistributionMixin):
     arg_constraints = {"probs": constraints.simplex,
                        "logits": constraints.real_vector}
+
+    @constraints.dependent_property(is_discrete=True, event_dim=0)
+    def support(self):
+        return constraints.integer_interval(0, self._num_events - 1)
 
     def log_prob(self, value):
         if getattr(value, '_pyro_categorical_support', None) == id(self):
@@ -267,6 +275,9 @@ class Independent(torch.distributions.Independent, TorchDistributionMixin):
 
 
 class Uniform(torch.distributions.Uniform, TorchDistributionMixin):
+    arg_constraints = {'low': constraints.dependent(is_discrete=False, event_dim=0),
+                       'high': constraints.dependent(is_discrete=False, event_dim=0)}
+
     def __init__(self, low, high, validate_args=None):
         self._unbroadcasted_low = low
         self._unbroadcasted_high = high
