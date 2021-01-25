@@ -34,38 +34,67 @@ def patch_dependency(target, root_module=torch):
     return decorator
 
 
+# Subclass to allow setting ._pyro_unpatched attribute.
+class _property(property):
+    pass
+
+
 # backport of https://github.com/pytorch/pytorch/pull/50547
 @patch_dependency("torch.distributions.constraints._Dependent.__init__")
 def _Dependent__init__(self, *, is_discrete=False, event_dim=0):
-    self.is_discrete = is_discrete
-    self.event_dim = event_dim
+    self._is_discrete = is_discrete
+    self._event_dim = event_dim
     super(torch.distributions.constraints._Dependent, self).__init__()
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._Dependent.is_discrete")
+@_property
+def _Dependent_is_discrete(self):
+    if self._is_discrete is NotImplemented:
+        raise NotImplementedError(".is_discrete cannot be determined statically")
+    return self._is_discrete
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._Dependent.event_dim")
+@_property
+def _Dependent_event_dim(self):
+    if self._event_dim is NotImplemented:
+        raise NotImplementedError(".event_dim cannot be determined statically")
+    return self._event_dim
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50547
 @patch_dependency("torch.distributions.constraints._Dependent.__call__")
-def _Dependent__call__(self, *, is_discrete=None, event_dim=None):
-    if is_discrete is None:
-        is_discrete = self.is_discrete
-    if event_dim is None:
-        event_dim = self.event_dim
+def _Dependent__call__(self, *, is_discrete=NotImplemented, event_dim=NotImplemented):
+    if is_discrete is NotImplemented:
+        is_discrete = self._is_discrete
+    if event_dim is NotImplemented:
+        event_dim = self._event_dim
     return torch.distributions.constraints._Dependent(
         is_discrete=is_discrete, event_dim=event_dim)
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency("torch.distributions.constraints._Dependent.check")
+def _Dependent_check(self, x):
+    raise ValueError('Cannot determine validity of dependent constraint')
+
+
+# backport of https://github.com/pytorch/pytorch/pull/50547
 @patch_dependency("torch.distributions.constraints._DependentProperty.__init__")
-def _DependentProperty__init__(self, fn=None, *, is_discrete=None, event_dim=None):
-    self.is_discrete = is_discrete
-    self.event_dim = event_dim
+def _DependentProperty__init__(self, fn=None, *, is_discrete=NotImplemented, event_dim=NotImplemented):
     super(torch.distributions.constraints._DependentProperty, self).__init__(fn)
+    self._is_discrete = is_discrete
+    self._event_dim = event_dim
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
 @patch_dependency("torch.distributions.constraints._DependentProperty.__call__")
 def _DependentProperty__call__(self, fn):
     return torch.distributions.constraints._DependentProperty(
-        fn, is_discrete=self.is_discrete, event_dim=self.event_dim)
+        fn, is_discrete=self._is_discrete, event_dim=self._event_dim)
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50581
