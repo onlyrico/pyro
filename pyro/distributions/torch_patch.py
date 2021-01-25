@@ -112,13 +112,13 @@ def _Transform_inverse_shape(self, shape):
 # backport of https://github.com/pytorch/pytorch/pull/50581
 @patch_dependency('torch.distributions.transforms._InverseTransform.forward_shape')
 def _InverseTransform_forward_shape(self, shape):
-    return self.inv.inverse_shape(shape)
+    return self._inv.inverse_shape(shape)
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50581
-@patch_dependency('torch.distributions.transforms._InverseTransform.forward_shape')
+@patch_dependency('torch.distributions.transforms._InverseTransform.inverse_shape')
 def _InverseTransform_inverse_shape(self, shape):
-    return self.inv.forward_shape(shape)
+    return self._inv.forward_shape(shape)
 
 
 # TODO: Move upstream to allow for pickle serialization of transforms
@@ -145,16 +145,6 @@ def _Transform_clear_cache(self):
 def _TransformedDistribution_clear_cache(self):
     for t in self.transforms:
         t.clear_cache()
-
-
-# Fixes a shape error in Multinomial.support with inhomogeneous .total_count
-@patch_dependency('torch.distributions.Multinomial.support')
-@torch.distributions.constraints.dependent_property
-def _Multinomial_support(self):
-    total_count = self.total_count
-    if isinstance(total_count, torch.Tensor):
-        total_count = total_count.unsqueeze(-1)
-    return torch.distributions.constraints.integer_interval(0, total_count)
 
 
 # TODO fix https://github.com/pytorch/pytorch/issues/48054 upstream
