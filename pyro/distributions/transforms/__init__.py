@@ -5,7 +5,6 @@ from torch.distributions import biject_to, transform_to
 from torch.distributions.transforms import *  # noqa F403
 from torch.distributions.transforms import __all__ as torch_transforms
 
-from pyro.distributions.constraints import corr_cholesky_constraint, independent, ordered_vector
 from pyro.distributions.torch_transform import ComposeTransformModule
 from pyro.distributions.transforms.affine_autoregressive import (AffineAutoregressive, ConditionalAffineAutoregressive,
                                                                  affine_autoregressive,
@@ -24,6 +23,7 @@ from pyro.distributions.transforms.generalized_channel_permute import (Condition
 from pyro.distributions.transforms.haar import HaarTransform
 from pyro.distributions.transforms.householder import (ConditionalHouseholder, Householder, conditional_householder,
                                                        householder)
+from pyro.distributions.transforms.independent import IndependentTransform
 from pyro.distributions.transforms.lower_cholesky_affine import LowerCholeskyAffine
 from pyro.distributions.transforms.matrix_exponential import (ConditionalMatrixExponential, MatrixExponential,
                                                               conditional_matrix_exponential, matrix_exponential)
@@ -42,21 +42,36 @@ from pyro.distributions.transforms.spline_autoregressive import (ConditionalSpli
 from pyro.distributions.transforms.spline_coupling import SplineCoupling, spline_coupling
 from pyro.distributions.transforms.sylvester import Sylvester, sylvester
 
+from .. import constraints
+
 ########################################
 # register transforms
 
-biject_to.register(independent, lambda c: biject_to(c.base_constraint))
-transform_to.register(independent, lambda c: transform_to(c.base_constraint))
+
+# backport of https://github.com/pytorch/pytorch/pull/50581
+@biject_to.register(constraints.independent)
+def _biject_to_independent(constraint):
+    base_transform = biject_to(constraint.base_constraint)
+    return IndependentTransform(
+        base_transform, constraint.reinterpreted_batch_ndims)
 
 
-@biject_to.register(corr_cholesky_constraint)
-@transform_to.register(corr_cholesky_constraint)
+# backport of https://github.com/pytorch/pytorch/pull/50581
+@transform_to.register(constraints.independent)
+def _transform_to_independent(constraint):
+    base_transform = transform_to(constraint.base_constraint)
+    return IndependentTransform(
+        base_transform, constraint.reinterpreted_batch_ndims)
+
+
+@biject_to.register(constraints.corr_cholesky_constraint)
+@transform_to.register(constraints.corr_cholesky_constraint)
 def _transform_to_corr_cholesky(constraint):
     return CorrLCholeskyTransform()
 
 
-@biject_to.register(ordered_vector)
-@transform_to.register(ordered_vector)
+@biject_to.register(constraints.ordered_vector)
+@transform_to.register(constraints.ordered_vector)
 def _transform_to_ordered_vector(constraint):
     return OrderedTransform()
 
