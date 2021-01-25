@@ -23,6 +23,7 @@ class LowerCholeskyAffine(Transform):
     :type scale_tril: torch.tensor
 
     """
+    domain = constraints.real_vector
     codomain = constraints.real_vector
     bijective = True
     event_dim = 1

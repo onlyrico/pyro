@@ -274,6 +274,79 @@ class Independent(torch.distributions.Independent, TorchDistributionMixin):
         return updated, log_normalizer
 
 
+# backport of https://github.com/pytorch/pytorch/pull/50547
+class TransformedDistribution(torch.distributions.TransformedDistribution,
+                              TorchDistributionMixin):
+    def __init__(self, base_distribution, transforms, validate_args=None):
+        if isinstance(transforms, torch.distributions.Transform):
+            self.transforms = [transforms, ]
+        elif isinstance(transforms, list):
+            if not all(isinstance(t, torch.distributions.Transform) for t in transforms):
+                raise ValueError("transforms must be a Transform or a list of Transforms")
+            self.transforms = transforms
+        else:
+            raise ValueError("transforms must be a Transform or list, but was {}".format(transforms))
+
+        # Reshape base_distribution according to transforms.
+        base_shape = base_distribution.batch_shape + base_distribution.event_shape
+        base_event_dim = len(base_distribution.event_shape)
+        transform = torch.distributions.ComposeTransform(self.transforms)
+        domain_event_dim = transform.domain.event_dim
+        if len(base_shape) < domain_event_dim:
+            raise ValueError("base_distribution needs to have shape with size at least {}, but got {}."
+                             .format(domain_event_dim, base_shape))
+        shape = transform.forward_shape(base_shape)
+        expanded_base_shape = transform.inverse_shape(shape)
+        if base_shape != expanded_base_shape:
+            base_batch_shape = expanded_base_shape[:len(expanded_base_shape) - base_event_dim]
+            base_distribution = base_distribution.expand(base_batch_shape)
+        reinterpreted_batch_ndims = domain_event_dim - base_event_dim
+        if reinterpreted_batch_ndims > 0:
+            base_distribution = Independent(base_distribution, reinterpreted_batch_ndims)
+        self.base_dist = base_distribution
+
+        # Compute shapes.
+        event_dim = transform.codomain.event_dim + max(base_event_dim - domain_event_dim, 0)
+        assert len(shape) >= event_dim
+        cut = len(shape) - event_dim
+        batch_shape = shape[:cut]
+        event_shape = shape[cut:]
+        super(torch.distributions.TransformedDistribution, self).__init__(
+            batch_shape, event_shape, validate_args=validate_args)
+
+    def expand(self, batch_shape, _instance=None):
+        new = self._get_checked_instance(TransformedDistribution, _instance)
+        return super().expand(batch_shape, new)
+
+    @constraints.dependent_property(is_discrete=False)
+    def support(self):
+        if not self.transforms:
+            return self.base_dist.support
+        support = self.transforms[-1].codomain
+        if len(self.event_shape) > support.event_dim:
+            support = constraints.independent(support, len(self.event_shape) - support.event_dim)
+        return support
+
+    def log_prob(self, value):
+        """
+        Scores the sample by inverting the transform(s) and computing the score
+        using the score of the base distribution and the log abs det jacobian.
+        """
+        event_dim = len(self.event_shape)
+        log_prob = 0.0
+        y = value
+        for transform in reversed(self.transforms):
+            x = transform.inv(y)
+            event_dim += transform.domain.event_dim - transform.codomain.event_dim
+            log_prob = log_prob - sum_rightmost(transform.log_abs_det_jacobian(x, y),
+                                                event_dim - transform.domain.event_dim)
+            y = x
+
+        log_prob = log_prob + sum_rightmost(self.base_dist.log_prob(y),
+                                            event_dim - len(self.base_dist.event_shape))
+        return log_prob
+
+
 class Uniform(torch.distributions.Uniform, TorchDistributionMixin):
     arg_constraints = {'low': constraints.dependent(is_discrete=False, event_dim=0),
                        'high': constraints.dependent(is_discrete=False, event_dim=0)}

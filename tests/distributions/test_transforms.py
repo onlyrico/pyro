@@ -8,6 +8,7 @@ import torch
 
 import pyro.distributions as dist
 import pyro.distributions.transforms as T
+from pyro.distributions import constraints
 
 from functools import partial, reduce
 import operator
@@ -19,7 +20,7 @@ class Flatten(dist.TransformModule):
     """
     Used to handle transforms with `event_dim > 1` until we have a Reshape transform in PyTorch
     """
-    event_dim = 1
+    codomain = constraints.real_vector
 
     def __init__(self, transform, input_shape):
         super().__init__(cache_size=1)
@@ -27,6 +28,10 @@ class Flatten(dist.TransformModule):
 
         self.transform = transform
         self.input_shape = input_shape
+
+    @constraints.dependent_property(is_discrete=False)
+    def domain(self):
+        return constraints.independent(constraints.real, len(self.input_shape))
 
     def _unflatten(self, x):
         return x.view(x.shape[:-1] + self.input_shape)
