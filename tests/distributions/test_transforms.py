@@ -20,30 +20,36 @@ class Flatten(dist.TransformModule):
     """
     Used to handle transforms with `event_dim > 1` until we have a Reshape transform in PyTorch
     """
+    domain = constraints.real_vector
     codomain = constraints.real_vector
 
     def __init__(self, transform, input_shape):
         super().__init__(cache_size=1)
-        assert(transform.event_dim == len(input_shape))
+        assert transform.domain.event_dim == len(input_shape)
+        output_shape = transform.forward_shape(input_shape)
+        assert len(output_shape) >= transform.codomain.event_dim
+        output_shape = output_shape[len(output_shape) - transform.codomain.event_dim:]
 
         self.transform = transform
         self.input_shape = input_shape
-
-    @constraints.dependent_property(is_discrete=False)
-    def domain(self):
-        return constraints.independent(constraints.real, len(self.input_shape))
-
-    def _unflatten(self, x):
-        return x.view(x.shape[:-1] + self.input_shape)
+        self.output_shape = output_shape
 
     def _call(self, x):
-        return self.transform._call(self._unflatten(x)).view_as(x)
+        x = x.reshape(x.shape[:-1] + self.input_shape)
+        y = self.transform._call(x)
+        y = y.reshape(y.shape[:y.dim() - len(self.output_shape)] + (-1,))
+        return y
 
-    def _inverse(self, x):
-        return self.transform._inverse(self._unflatten(x)).view_as(x)
+    def _inverse(self, y):
+        y = y.reshape(y.shape[:-1] + self.output_shape)
+        x = self.transform._inverse(y)
+        x = x.reshape(x.shape[:x.dim() - len(self.input_shape)] + (-1,))
+        return x
 
     def log_abs_det_jacobian(self, x, y):
-        return self.transform.log_abs_det_jacobian(self._unflatten(x), self._unflatten(y))
+        x = x.reshape(x.shape[:-1] + self.input_shape)
+        y = y.reshape(y.shape[:-1] + self.output_shape)
+        return self.transform.log_abs_det_jacobian(x, y)
 
     def parameters(self):
         return self.transform.parameters()
