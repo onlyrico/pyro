@@ -133,6 +133,15 @@ class TransformTests(TestCase):
         sample = dist.TransformedDistribution(base_dist, [transform]).sample()
         assert sample.shape == base_shape
 
+        batch_shape = base_shape[:len(base_shape) - transform.domain.event_dim]
+        input_event_shape = base_shape[len(base_shape) - transform.domain.event_dim:]
+        output_event_shape = base_shape[len(base_shape) - transform.codomain.event_dim:]
+        output_shape = batch_shape + output_event_shape
+        assert transform.forward_shape(input_event_shape) == output_event_shape
+        assert transform.forward_shape(base_shape) == output_shape
+        assert transform.inverse_shape(output_event_shape) == input_event_shape
+        assert transform.inverse_shape(output_shape) == base_shape
+
     def _test_autodiff(self, input_dim, transform, inverse=False):
         """
         This method essentially tests whether autodiff will not throw any errors

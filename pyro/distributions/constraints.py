@@ -50,34 +50,35 @@ _()
 
 
 # TODO remove after https://github.com/pytorch/pytorch/pull/50547
-class IndependentConstraint(Constraint):
-    """
-    Wraps a constraint by aggregating over ``reinterpreted_batch_ndims``-many
-    dims in :meth:`check`, so that an event is valid only if all its
-    independent entries are valid.
+if "IndependentConstraint" not in locals():
+    class IndependentConstraint(Constraint):
+        """
+        Wraps a constraint by aggregating over ``reinterpreted_batch_ndims``-many
+        dims in :meth:`check`, so that an event is valid only if all its
+        independent entries are valid.
 
-    :param torch.distributions.constraints.Constraint base_constraint: A base
-        constraint whose entries are incidentally independent.
-    :param int reinterpreted_batch_ndims: The number of extra event dimensions that will
-        be considered dependent.
-    """
-    def __init__(self, base_constraint, reinterpreted_batch_ndims):
-        self.base_constraint = base_constraint
-        self.reinterpreted_batch_ndims = reinterpreted_batch_ndims
+        :param torch.distributions.constraints.Constraint base_constraint: A base
+            constraint whose entries are incidentally independent.
+        :param int reinterpreted_batch_ndims: The number of extra event dimensions that will
+            be considered dependent.
+        """
+        def __init__(self, base_constraint, reinterpreted_batch_ndims):
+            self.base_constraint = base_constraint
+            self.reinterpreted_batch_ndims = reinterpreted_batch_ndims
 
-    @property
-    def is_discrete(self):
-        return self.base_constraint.is_discrete
+        @property
+        def is_discrete(self):
+            return self.base_constraint.is_discrete
 
-    @property
-    def event_dim(self):
-        return self.base_constraint.event_dim + self.reinterpreted_batch_ndims
+        @property
+        def event_dim(self):
+            return self.base_constraint.event_dim + self.reinterpreted_batch_ndims
 
-    def check(self, value):
-        result = self.base_constraint.check(value)
-        result = result.reshape(result.shape[:result.dim() - self.reinterpreted_batch_ndims] + (-1,))
-        result = result.all(-1)
-        return result
+        def check(self, value):
+            result = self.base_constraint.check(value)
+            result = result.reshape(result.shape[:result.dim() - self.reinterpreted_batch_ndims] + (-1,))
+            result = result.all(-1)
+            return result
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50547
