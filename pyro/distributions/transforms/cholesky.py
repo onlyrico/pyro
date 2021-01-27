@@ -7,7 +7,6 @@ import torch
 from torch.distributions.transforms import Transform
 
 from .. import constraints
-from ..constraints import corr_cholesky_constraint
 
 
 def _vector_to_l_cholesky(z):
@@ -44,7 +43,7 @@ class CorrLCholeskyTransform(Transform):
 
     """
     domain = constraints.real_vector
-    codomain = corr_cholesky_constraint
+    codomain = constraints.corr_cholesky
     bijective = True
     sign = +1
 

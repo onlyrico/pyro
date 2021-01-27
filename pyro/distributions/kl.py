@@ -3,7 +3,7 @@
 
 import math
 
-from torch.distributions import Independent, TransformedDistribution, kl_divergence, register_kl, MultivariateNormal, Normal
+from torch.distributions import Independent, MultivariateNormal, Normal, kl_divergence, register_kl
 
 from pyro.distributions.delta import Delta
 from pyro.distributions.distribution import Distribution
@@ -43,18 +43,6 @@ def _kl_independent_mvn(p, q):
                 - p.base_dist.scale.log().sum(-1))
 
     raise NotImplementedError
-
-
-# TODO delete after https://github.com/pytorch/pytorch/pull/50547
-@register_kl(TransformedDistribution, TransformedDistribution)
-def _kl_transformed_transformed(p, q):
-    if p.transforms != q.transforms:
-        raise NotImplementedError
-    if p.event_shape != q.event_shape:
-        raise NotImplementedError
-    result = kl_divergence(p.base_dist, q.base_dist)
-    batch_dim = max(len(p.batch_shape), len(q.batch_shape))
-    return sum_rightmost(result, result.dim() - batch_dim)
 
 
 __all__ = []
