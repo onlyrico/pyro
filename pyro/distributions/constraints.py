@@ -60,7 +60,7 @@ class _OrderedVector(Constraint):
 integer = _Integer()
 ordered_vector = _OrderedVector()
 sphere = _Sphere()
-corr_cholesky_constraint = corr_cholesky  # DEPRECATED
+corr_cholesky_constraint = corr_cholesky  # noqa: F405 DEPRECATED
 
 __all__ = [
     'integer',
