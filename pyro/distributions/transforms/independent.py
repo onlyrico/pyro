@@ -3,9 +3,8 @@
 
 from torch.distributions.transforms import Transform
 
-from pyro.distributions.util import sum_rightmost
-
 from .. import constraints
+from ..util import sum_rightmost
 
 
 # backport of https://github.com/pytorch/pytorch/pull/50581

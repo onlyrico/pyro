@@ -28,25 +28,25 @@ class DiscreteCosineTransform(Transform):
 
     def __init__(self, dim=-1, smooth=0., cache_size=0):
         assert isinstance(dim, int) and dim < 0
-        self.event_dim = -dim
+        self.dim = dim
         self.smooth = float(smooth)
         self._weight_cache = None
         super().__init__(cache_size=cache_size)
 
     def __hash__(self):
-        return hash((type(self), self.event_dim, self.flip))
+        return hash((type(self), self.dim, self.smooth))
 
     def __eq__(self, other):
-        return (type(self) == type(other) and self.event_dim == other.event_dim
+        return (type(self) == type(other) and self.dim == other.dim
                 and self.smooth == other.smooth)
 
     @constraints.dependent_property(is_discrete=False)
     def domain(self):
-        return constraints.independent(constraints.real, self.event_dim)
+        return constraints.independent(constraints.real, -self.dim)
 
     @constraints.dependent_property(is_discrete=False)
     def codomain(self):
-        return constraints.independent(constraints.real, self.event_dim)
+        return constraints.independent(constraints.real, -self.dim)
 
     @torch.no_grad()
     def _weight(self, y):
@@ -60,7 +60,7 @@ class DiscreteCosineTransform(Transform):
         return self._weight_cache
 
     def _call(self, x):
-        dim = -self.event_dim
+        dim = self.dim
         if dim != -1:
             x = x.transpose(dim, -1)
         y = dct(x)
@@ -71,7 +71,7 @@ class DiscreteCosineTransform(Transform):
         return y
 
     def _inverse(self, y):
-        dim = -self.event_dim
+        dim = self.dim
         if dim != -1:
             y = y.transpose(dim, -1)
         if self.smooth:
@@ -82,9 +82,19 @@ class DiscreteCosineTransform(Transform):
         return x
 
     def log_abs_det_jacobian(self, x, y):
-        return x.new_zeros(x.shape[:-self.event_dim])
+        return x.new_zeros(x.shape[:self.dim])
 
     def with_cache(self, cache_size=1):
         if self._cache_size == cache_size:
             return self
-        return DiscreteCosineTransform(-self.event_dim, self.smooth, cache_size=cache_size)
+        return DiscreteCosineTransform(self.dim, self.smooth, cache_size=cache_size)
+
+    def forward_shape(self, shape):
+        if len(shape) < self.event_dim:
+            raise ValueError("Too few dimensions on input")
+        return shape
+
+    def inverse_shape(self, shape):
+        if len(shape) < self.event_dim:
+            raise ValueError("Too few dimensions on input")
+        return shape

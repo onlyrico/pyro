@@ -28,7 +28,7 @@ class HaarTransform(Transform):
 
     def __init__(self, dim=-1, flip=False, cache_size=0):
         assert isinstance(dim, int) and dim < 0
-        self.event_dim = -dim
+        self.dim = dim
         self.flip = flip
         super().__init__(cache_size=cache_size)
 
@@ -36,19 +36,19 @@ class HaarTransform(Transform):
         return hash((type(self), self.event_dim, self.flip))
 
     def __eq__(self, other):
-        return (type(self) == type(other) and self.event_dim == other.event_dim and
+        return (type(self) == type(other) and self.dim == other.dim and
                 self.flip == other.flip)
 
     @constraints.dependent_property(is_discrete=False)
     def domain(self):
-        return constraints.independent(constraints.real, self.event_dim)
+        return constraints.independent(constraints.real, -self.dim)
 
     @constraints.dependent_property(is_discrete=False)
     def codomain(self):
-        return constraints.independent(constraints.real, self.event_dim)
+        return constraints.independent(constraints.real, -self.dim)
 
     def _call(self, x):
-        dim = -self.event_dim
+        dim = self.dim
         if dim != -1:
             x = x.transpose(dim, -1)
         if self.flip:
@@ -59,7 +59,7 @@ class HaarTransform(Transform):
         return y
 
     def _inverse(self, y):
-        dim = -self.event_dim
+        dim = self.dim
         if dim != -1:
             y = y.transpose(dim, -1)
         x = inverse_haar_transform(y)
@@ -70,12 +70,12 @@ class HaarTransform(Transform):
         return x
 
     def log_abs_det_jacobian(self, x, y):
-        return x.new_zeros(x.shape[:-self.event_dim])
+        return x.new_zeros(x.shape[:self.dim])
 
     def with_cache(self, cache_size=1):
         if self._cache_size == cache_size:
             return self
-        return HaarTransform(-self.event_dim, flip=self.flip, cache_size=cache_size)
+        return HaarTransform(self.dim, flip=self.flip, cache_size=cache_size)
 
     def forward_shape(self, shape):
         if len(shape) < self.event_dim:

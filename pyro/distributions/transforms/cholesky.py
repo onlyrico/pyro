@@ -4,10 +4,10 @@
 import math
 
 import torch
-from torch.distributions import constraints
 from torch.distributions.transforms import Transform
 
-from pyro.distributions.constraints import corr_cholesky_constraint
+from .. import constraints
+from ..constraints import corr_cholesky_constraint
 
 
 def _vector_to_l_cholesky(z):
@@ -47,7 +47,6 @@ class CorrLCholeskyTransform(Transform):
     codomain = corr_cholesky_constraint
     bijective = True
     sign = +1
-    event_dim = 1
 
     def __eq__(self, other):
         return isinstance(other, CorrLCholeskyTransform)

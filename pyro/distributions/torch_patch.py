@@ -97,6 +97,15 @@ def _DependentProperty__call__(self, fn):
         fn, is_discrete=self._is_discrete, event_dim=self._event_dim)
 
 
+# backport of https://github.com/pytorch/pytorch/pull/50547
+@patch_dependency('torch.distributions.transforms.Transform.event_dim')
+@_property
+def _Transform_event_dim(self):
+    if self.domain.event_dim == self.codomain.event_dim:
+        return self.domain.event_dim
+    raise ValueError("Please use either .domain.event_dim or .codomain.event_dim")
+
+
 # backport of https://github.com/pytorch/pytorch/pull/50581
 @patch_dependency('torch.distributions.transforms.Transform.forward_shape')
 def _Transform_forward_shape(self, shape):

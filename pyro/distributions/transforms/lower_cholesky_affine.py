@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from torch.distributions import constraints
 from torch.distributions.transforms import Transform
 
-from pyro.distributions.util import copy_docs_from
+from .. import constraints
+from ..util import copy_docs_from
 
 
 @copy_docs_from(Transform)
@@ -26,7 +26,6 @@ class LowerCholeskyAffine(Transform):
     domain = constraints.real_vector
     codomain = constraints.real_vector
     bijective = True
-    event_dim = 1
     volume_preserving = False
 
     def __init__(self, loc, scale_tril, cache_size=0):
