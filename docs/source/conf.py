@@ -48,6 +48,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     'sphinx.ext.napoleon',
+    "sphinx_copybutton",
 ]
 
 # Disable documentation inheritance so as to avoid inheriting
